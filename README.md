@@ -34,3 +34,9 @@ node notification_app_be/stage1/top10_notifications.js
 
 - API token is read from `.env.local` (`LOG_ACCESS_TOKEN`).
 - Frontend data comes through Next API routes under `app/api/*`.
+
+## Preview Images
+
+![First](/first.png)
+
+![Priority](/priority.png)
