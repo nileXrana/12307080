@@ -11,10 +11,9 @@ import {
   Select,
   FormControl,
   InputLabel,
-  Button,
-  Pagination,
   CircularProgress,
   Alert,
+  Pagination,
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -28,9 +27,18 @@ interface NotificationItem {
 }
 
 const VIEWED_KEY = 'viewedNotificationIds';
+const TYPE_WEIGHT: Record<NotificationType, number> = {
+  Placement: 3,
+  Result: 2,
+  Event: 1,
+};
 
-export default function Home() {
-  const [limit, setLimit] = useState(10);
+function parseTime(timestamp: string): number {
+  return new Date(timestamp.replace(' ', 'T') + 'Z').getTime();
+}
+
+export default function PriorityPage() {
+  const [topN, setTopN] = useState(10);
   const [page, setPage] = useState(1);
   const [typeFilter, setTypeFilter] = useState<'All' | NotificationType>('All');
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -55,7 +63,7 @@ export default function Home() {
       setError('');
       try {
         const params = new URLSearchParams();
-        params.set('limit', String(limit));
+        params.set('limit', '100');
         params.set('page', String(page));
         if (typeFilter !== 'All') {
           params.set('notification_type', typeFilter);
@@ -78,30 +86,33 @@ export default function Home() {
     };
 
     void fetchNotifications();
-  }, [limit, page, typeFilter]);
+  }, [page, typeFilter]);
 
   const viewedMap = useMemo(() => new Set(viewedIds), [viewedIds]);
 
-  const markViewed = (id: string) => {
-    if (viewedMap.has(id)) return;
-    const updated = [...viewedIds, id];
-    setViewedIds(updated);
-    localStorage.setItem(VIEWED_KEY, JSON.stringify(updated));
-  };
+  const priorityNotifications = useMemo(() => {
+    return [...notifications]
+      .sort((a, b) => {
+        const weightDiff = TYPE_WEIGHT[b.Type] - TYPE_WEIGHT[a.Type];
+        if (weightDiff !== 0) return weightDiff;
+        return parseTime(b.Timestamp) - parseTime(a.Timestamp);
+      })
+      .slice(0, topN);
+  }, [notifications, topN]);
 
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
-        All Notifications
+        Priority Notifications
       </Typography>
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
-        <FormControl size="small" sx={{ minWidth: 120 }}>
-          <InputLabel>Limit</InputLabel>
-          <Select label="Limit" value={limit} onChange={(e) => setLimit(Number(e.target.value))}>
-            <MenuItem value={10}>10</MenuItem>
-            <MenuItem value={15}>15</MenuItem>
-            <MenuItem value={20}>20</MenuItem>
+        <FormControl size="small" sx={{ minWidth: 140 }}>
+          <InputLabel>Top N</InputLabel>
+          <Select label="Top N" value={topN} onChange={(e) => setTopN(Number(e.target.value))}>
+            <MenuItem value={10}>Top 10</MenuItem>
+            <MenuItem value={15}>Top 15</MenuItem>
+            <MenuItem value={20}>Top 20</MenuItem>
           </Select>
         </FormControl>
 
@@ -129,20 +140,17 @@ export default function Home() {
         </Box>
       )}
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       <Stack spacing={2}>
-        {notifications.map((n) => {
+        {priorityNotifications.map((n, idx) => {
           const isViewed = viewedMap.has(n.ID);
           return (
             <Card key={n.ID} variant="outlined">
               <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                   <Stack direction="row" spacing={1}>
+                    <Chip label={`#${idx + 1}`} size="small" color="warning" />
                     <Chip label={n.Type} size="small" color="primary" />
                     <Chip
                       label={isViewed ? 'Viewed' : 'New'}
@@ -155,18 +163,7 @@ export default function Home() {
                   </Typography>
                 </Stack>
 
-                <Typography variant="body1" sx={{ mb: 1 }}>
-                  {n.Message}
-                </Typography>
-
-                <Button
-                  variant="text"
-                  size="small"
-                  onClick={() => markViewed(n.ID)}
-                  disabled={isViewed}
-                >
-                  {isViewed ? 'Already Viewed' : 'Mark Viewed'}
-                </Button>
+                <Typography variant="body1">{n.Message}</Typography>
               </CardContent>
             </Card>
           );
@@ -174,7 +171,12 @@ export default function Home() {
       </Stack>
 
       <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
-        <Pagination count={10} page={page} onChange={(_, value) => setPage(value)} color="primary" />
+        <Pagination
+          count={10}
+          page={page}
+          onChange={(_, value) => setPage(value)}
+          color="primary"
+        />
       </Box>
     </Box>
   );

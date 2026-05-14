@@ -1,7 +1,8 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { ThemeProvider, createTheme, CssBaseline, Box } from '@mui/material';
+import Link from 'next/link';
+import { ThemeProvider, createTheme, CssBaseline, Box, AppBar, Toolbar, Button, Typography, Container } from '@mui/material';
 
 const theme = createTheme({
   palette: {
@@ -27,8 +28,23 @@ export default function RootLayout({ children }: RootLayoutProps) {
       <body>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <Box sx={{ minHeight: '100vh', p: 2 }}>
-            {children}
+          <Box sx={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
+            <AppBar position="static" color="primary">
+              <Toolbar>
+                <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                  Campus Notifications
+                </Typography>
+                <Button color="inherit" component={Link} href="/">
+                  All
+                </Button>
+                <Button color="inherit" component={Link} href="/priority">
+                  Priority
+                </Button>
+              </Toolbar>
+            </AppBar>
+            <Container maxWidth="md" sx={{ py: 3 }}>
+              {children}
+            </Container>
           </Box>
         </ThemeProvider>
       </body>
