@@ -37,6 +37,6 @@ node notification_app_be/stage1/top10_notifications.js
 
 ## Preview Images
 
-![First](/first.png)
+![First](notification_app_be/stage1/screenshots/first.png)
 
-![Priority](/priority.png)
+![Priority](notification_app_be/stage1/screenshots/priority.png)
