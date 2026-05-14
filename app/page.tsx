@@ -65,6 +65,9 @@ export default function Home() {
         const data = await response.json();
 
         if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error('Unauthorized: check LOG_ACCESS_TOKEN in .env.local');
+          }
           throw new Error(data?.message || data?.error || 'Failed to fetch notifications');
         }
 
@@ -87,6 +90,13 @@ export default function Home() {
     const updated = [...viewedIds, id];
     setViewedIds(updated);
     localStorage.setItem(VIEWED_KEY, JSON.stringify(updated));
+  };
+
+  const markAllViewed = () => {
+    const ids = notifications.map((n) => n.ID);
+    const unique = Array.from(new Set([...viewedIds, ...ids]));
+    setViewedIds(unique);
+    localStorage.setItem(VIEWED_KEY, JSON.stringify(unique));
   };
 
   return (
@@ -136,10 +146,15 @@ export default function Home() {
       )}
 
       <Stack spacing={2}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+          <Button size="small" onClick={markAllViewed} disabled={notifications.length === 0}>
+            Mark all viewed
+          </Button>
+        </Box>
         {notifications.map((n) => {
           const isViewed = viewedMap.has(n.ID);
           return (
-            <Card key={n.ID} variant="outlined">
+            <Card key={n.ID} variant="outlined" onClick={() => markViewed(n.ID)} sx={{ cursor: 'pointer' }}>
               <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                   <Stack direction="row" spacing={1}>
@@ -159,12 +174,7 @@ export default function Home() {
                   {n.Message}
                 </Typography>
 
-                <Button
-                  variant="text"
-                  size="small"
-                  onClick={() => markViewed(n.ID)}
-                  disabled={isViewed}
-                >
+                <Button variant="text" size="small" disabled={isViewed}>
                   {isViewed ? 'Already Viewed' : 'Mark Viewed'}
                 </Button>
               </CardContent>

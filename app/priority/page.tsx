@@ -14,6 +14,7 @@ import {
   CircularProgress,
   Alert,
   Pagination,
+  Button,
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -73,6 +74,9 @@ export default function PriorityPage() {
         const data = await response.json();
 
         if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error('Unauthorized: check LOG_ACCESS_TOKEN in .env.local');
+          }
           throw new Error(data?.message || data?.error || 'Failed to fetch notifications');
         }
 
@@ -99,6 +103,13 @@ export default function PriorityPage() {
       })
       .slice(0, topN);
   }, [notifications, topN]);
+
+  const markAllViewed = () => {
+    const ids = notifications.map((n) => n.ID);
+    const unique = Array.from(new Set([...viewedIds, ...ids]));
+    setViewedIds(unique);
+    localStorage.setItem(VIEWED_KEY, JSON.stringify(unique));
+  };
 
   return (
     <Box>
@@ -143,10 +154,21 @@ export default function PriorityPage() {
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       <Stack spacing={2}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+          <Button size="small" onClick={markAllViewed} disabled={priorityNotifications.length === 0}>
+            Mark all viewed
+          </Button>
+        </Box>
         {priorityNotifications.map((n, idx) => {
           const isViewed = viewedMap.has(n.ID);
           return (
-            <Card key={n.ID} variant="outlined">
+            <Card key={n.ID} variant="outlined" onClick={() => {
+              if (!isViewed) {
+                const updated = [...viewedIds, n.ID];
+                setViewedIds(updated);
+                localStorage.setItem(VIEWED_KEY, JSON.stringify(updated));
+              }
+            }} sx={{ cursor: 'pointer' }}>
               <CardContent>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
                   <Stack direction="row" spacing={1}>
